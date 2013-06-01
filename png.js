@@ -1,3 +1,5 @@
+//TODO: test on large pngs. It’s dubious len calculating below.
+
 Number.prototype.toUInt=function(){ return this<0?this+4294967296:this; };
 Number.prototype.bytes32=function(){ return [(this>>>24)&0xff,(this>>>16)&0xff,(this>>>8)&0xff,this&0xff]; };
 Number.prototype.bytes16sw=function(){ return [this&0xff,(this>>>8)&0xff]; };
@@ -44,54 +46,7 @@ String.prototype.toByteStream=function(){
 	return s;
 }
 
-
-var toDataURLExample=function(w, h){
-	var imageData=Array.prototype.slice.call(this.getContext("2d").getImageData(0,0,this.width,this.height).data);
-	//var w=this.width;
-	//var h=this.height;
-
-	//=====IHDR
-	var stream=[
-		0x89,0x50,0x4e,0x47,0x0d,0x0a,0x1a,0x0a,
-		0x00,0x00,0x00,0x0d,0x49,0x48,0x44,0x52
-	];
-	Array.prototype.push.apply(stream, w.bytes32() );
-	Array.prototype.push.apply(stream, h.bytes32() );
-	stream.push(0x08,0x06,0x00,0x00,0x00);
-	Array.prototype.push.apply(stream, stream.crc32(12,17).bytes32() );
-
-	//=====IDAT
-	var len=h*(w*4+1);
-	for(var y=0;y<h;y++)
-		imageData.splice(y*(w*4+1),0,0);
-	var blocks=Math.ceil(len/32768); //32768 - max block length?
-
-	stream = stream.concat( (len+ 5*blocks +6).bytes32() ); //length
-
-	stream.push(0x49,0x44,0x41,0x54,0x78,0x01);//IHDR, ZLIB flags
-
-	var crcStart=stream.length;
-	var crcLen=(len+5*blocks+6+4);
-	for(var i=0;i<blocks;i++){
-		var blockLen=Math.min(32768,len-(i*32768)); //last block length
-		stream.push(i==(blocks-1)?0x01:0x00); //end block or not
-		Array.prototype.push.apply(stream, blockLen.bytes16sw() ); //blocklen
-		Array.prototype.push.apply(stream, (~blockLen).bytes16sw() ); //blocklencomplement
-		var id=imageData.slice(i*32768,i*32768+blockLen); //splice part of image data
-		Array.prototype.push.apply(stream, id ); //write it raw
-	}
-
-	Array.prototype.push.apply(stream, imageData.adler32().bytes32() ); //make adler
-	Array.prototype.push.apply(stream, stream.crc32(crcStart, crcLen).bytes32() );
-
-	//=====IEND
-	stream.push(0x00,0x00,0x00,0x00,0x49,0x45,0x4e,0x44);
-	Array.prototype.push.apply(stream, stream.crc32(stream.length-4, 4).bytes32() );
-	return "data:image/png;base64,"+btoa(stream.map(function(c){ return String.fromCharCode(c); }).join(''));
-};
-
-
-
+//Class
 var PNG = function(opts){
 	this.options = {};
 	import$(this.options, PNG.defaults);
@@ -107,7 +62,7 @@ var PNG = function(opts){
 import$(PNG, {
 	defaults: {		
 		bitDepth: 0x08,
-		colorType: 0x06, //3 - Indexed, 6 — trueColor with alpha
+		colorType: 0x03, //3 - Indexed, 6 — trueColor with alpha
 		compressMethod: 0x00, 
 		filterMethod: 0x00, //0 - No filtering
 		interlaceMethod: 0x00
@@ -136,41 +91,57 @@ import$(PNG.prototype, {
 		s = s.concat(s.crc32(12,17).bytes32());
 
 		//PLTE
-		//s = s.concat(self.chunks.PLTE.toStream());
+		if (o.colorType == 0x03) {
+			var plteStream = self.chunks.PLTE.toByteStream();
+			s = s.concat(plteStream.length.bytes32());
+			var crcStart = s.length;
+			s = s.concat(0x50, 0x4c, 0x54, 0x45); //PLTE
+			s = s.concat(plteStream);
+			s = s.concat(s.crc32(crcStart, plteStream.length + 4).bytes32());
+		}
 
 		//tRNS
-		//s = s.concat(self.chunks.tRNS.toStream());
+		if (o.colorType == 0x03) {			
+			var trnsStream = self.chunks.tRNS.toByteStream();
+			s = s.concat(trnsStream.length.bytes32());
+			var crcStart = s.length;
+			s = s.concat(0x74, 0x52, 0x4e, 0x53); //tRNS
+			s = s.concat(trnsStream);
+			s = s.concat(s.crc32(crcStart, trnsStream.length + 4).bytes32());
+		} else {
+			//IDAT stream 
+		}
 
-		//IDAT		
+		//IDAT
 		var dataStream = self.data.toByteStream();
 		var w = self.width, h = self.height,
-			l = 4
+			l = (o.colorType == 0x03 ? 1 : 4); //How much bytes per pixel //TODO: check other than 8bit color
 
-		var len=h*(w*4+1);
+		var len=h*(w*l+1); //+1 is filter type (00)
 		for(var y=0;y<h;y++)
-			dataStream.splice(y*(w*4+1),0,0); //insert zero chunk in every row?
+			dataStream.splice(y*(w*l+1),0,0x00); //insert filter type (0x00) before the each scanline (row)
 
 		var blocks=Math.ceil(len/32768); //32768 - max block length?
 
-		s = s.concat( (len+ 5*blocks +6).bytes32() ); //length
-		s = s.concat(0x49,0x44,0x41,0x54) //IDAT
+		s = s.concat( (len+ 5*blocks +6).bytes32() ); //length = dataLen + (btype+ lenx2 + nlenx2) + zlib_header + adler
+		s = s.concat(0x49, 0x44, 0x41, 0x54); //IDAT
+
+		var crcStart=s.length;
+		var crcLen=(len+5*blocks+6+4); //datalen + header
 
 		//zlib
 		//http://www.w3.org/TR/2003/REC-PNG-20031110/#10CompressionCM0
 		//http://tools.ietf.org/html/rfc1950#page-4	
-		s = s.concat(0x78,0x01) //7 - 2^7, 8 - deflate method, 01 - fastest compression, no dict, checkflag
+		s = s.concat(0x78, 0x01) //7 - 2^7, 8 - deflate method, 01 - fastest compression, no dict, checkflag
 		//s = s.concat(0x01, (0x02).bytes16sw(), (~0x02).bytes16sw(), dataStream) //01 - end-block header, len, nlen, rawdata
-		
-		var crcStart=s.length;
-		var crcLen=(len+5*blocks+6+4);
-		
+				
 		for(var i=0;i<blocks;i++){
-			var blockLen=Math.min(32768,len-(i*32768)); //last block length
+			var blockLen=Math.min(32768,len-(i*32768)); //last block length detection
 			s.push(i==(blocks-1)?0x01:0x00); //end block or not
-			Array.prototype.push.apply(s, blockLen.bytes16sw() ); //blocklen
-			Array.prototype.push.apply(s, (~blockLen).bytes16sw() ); //blocklencomplement
+			s = s.concat(blockLen.bytes16sw() ); //blocklen
+			s = s.concat((~blockLen).bytes16sw() ); //blocklencomplement
 			var id=dataStream.slice(i*32768,i*32768+blockLen); //splice part of image data
-			Array.prototype.push.apply(s, id ); //write it raw
+			s = s.concat( id ); //write it raw
 		}
 
 		s = s.concat( dataStream.adler32().bytes32() ); //make adler
