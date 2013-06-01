@@ -1,0 +1,140 @@
+<title>Data-URI pattern generator</title>
+
+<style>
+	body{
+	}
+	.container{
+		outline: 1px dotted gray;
+		padding:10px;
+		margin:0;
+		vertical-align: top;
+		background: white;
+		margin-left: 180px;
+	}	
+	.aside{
+		float: left;
+		width: 150px;
+		margin-left: 0;
+	}
+	#stage{
+		outline: 1px solid #e3e3e3;
+		vertical-align: top;
+	}
+	textarea{
+		word-break: break-all;
+		font-family: monospace;
+		max-width:  none;
+		width: auto;
+		display: block;
+		width: 100%;
+	}
+	input{
+		width: 80px;
+	}
+	label{
+		width: 60px;
+		display: inline-block;
+		white-space: nowrap;
+	}
+</style>
+
+
+
+<div class="aside container">
+	<label for="lh">Height</label>
+	<input id="lh" type="number" min="1" max="200" step="1" value="10"/>
+	<label for="w">Width</label>
+	<input id="w" type="number" min="1" max="200" step="1" value="10"/>
+	<label for="patt">Pattern</label>
+	<input id="patt" type="text" value="."/>
+	<label for="offset">Offset</label>
+	<input id="offset" type="number" min="0" max="100" step="1" value="0"/>
+	<label for="fs">Font-size</label>
+	<input id="fs" type="number" min="1" max="200" step="1" value="12"></input>
+	<label for="color">Font-color</label>
+	<input id="color" type="text" value="#000"/>
+	<label for="bg-color">BG color</label>
+	<input id="bg-color" type="text" value="#fff"/>
+	<label for="stage">Image</label>
+	<canvas id="stage"></canvas>
+	! font properties
+	! transform properties
+</div>
+
+<div class="container">
+	<textarea id="result" rows="7" spellcheck="false"></textarea>
+	<output id="kb">! How much KB</output>
+	<textarea id="png-result" rows="7" spellcheck="false">! Undecoded PNG</textarea>
+</div>
+
+<script src="./jquery.js"></script>
+<script src="./jquery.color.js"></script>
+<script src="./cpickr.js"></script>
+
+<script>
+jQuery(function(){
+
+	var canvas = document.getElementById("stage");//document.createElement('canvas'); //virtual bg painter
+	var context = canvas.getContext('2d');
+
+	var lhInput = document.getElementById("lh");
+	var fsInput = document.getElementById("fs");
+	var wInput = document.getElementById("w");
+	var pattInput = document.getElementById("patt");
+	var offsetInput = document.getElementById("offset");
+	var colorInput = document.getElementById("color");
+	var bgColorInput = document.getElementById("bg-color");
+	jQuery(colorInput).cpickr();
+	jQuery(bgColorInput).cpickr();
+
+	var result = document.getElementById("result");
+
+	var lh , text, w, fs, offset;
+	
+
+
+	var update = function(){
+		lh = lhInput.value;
+		text = pattInput.value;
+		w = wInput.value;
+		fs = fsInput.value;
+		offset = offsetInput.value;
+		color = colorInput.value;
+		bgColor = bgColorInput.value;
+
+		context.clearRect(0,0,canvas.width,canvas.height);
+
+		//var metrics = context.measureText(text);
+		//var width = metrics.width;
+
+		canvas.width  = w;
+		canvas.height = lh;
+		context.font = fs + "px Arial";
+		context.fillStyle = bgColor;
+		context.fillRect(0,0,w,lh);
+		context.fillStyle = color;
+		context.fillText(pattInput.value, 0, lh-offset);
+
+		bgURI = canvas.toDataURL('image/x-windows-bmp');
+
+		result.value = bgURI;	
+
+		document.body.setAttribute("style", "background: url(" + bgURI + ");");	
+	}
+
+
+	lhInput.addEventListener("change", update, false);
+	colorInput.addEventListener("change", update, false);
+	bgColorInput.addEventListener("change", update, false);
+	offsetInput.addEventListener("change", update, false);
+	fsInput.addEventListener("change", update, false);
+	wInput.addEventListener("change", update, false);
+	pattInput.addEventListener("input", update, false);
+	offsetInput.addEventListener("change", update, false);
+
+	update();
+})
+
+
+
+</script>

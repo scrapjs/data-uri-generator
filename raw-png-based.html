@@ -1,0 +1,127 @@
+<title>Data-URI pattern generator</title>
+
+<style>
+	body{
+	}
+	.container{
+		outline: 1px dotted gray;
+		padding:10px;
+		margin:0;
+		vertical-align: top;
+		background: white;
+		margin-left: 280px;
+	}	
+	.aside{
+		float: left;
+		width: 250px;
+		margin-left: 0;
+	}
+	#stage{
+		outline: 1px solid #e3e3e3;
+		vertical-align: top;
+	}
+	textarea{
+		word-break: break-all;
+		font-family: monospace;
+		max-width:  none;
+		width: auto;
+		display: block;
+		width: 100%;
+	}
+	input{
+		width: 180px;
+	}
+	label{
+		width: 60px;
+		display: inline-block;
+		white-space: nowrap;
+	}
+</style>
+
+
+
+<div class="aside container">
+	<label for="h">Height</label>
+	<input id="h" type="number" min="1" max="200" step="1" value="5"/>
+	<label for="w">Width</label>
+	<input id="w" type="number" min="1" max="200" step="1" value="5"/>
+	<label for="plte">PLTE chunk</label>
+	<textarea id="plte" rows="4" spellcheck="false"></textarea>
+	<label for="trns">tRNS chunk</label>
+	<textarea id="trns" rows="4" spellcheck="false"></textarea>
+	<label for="data">data</label>
+	<textarea id="data" rows="4" spellcheck="false">00000000ffffffff</textarea>
+</div>
+
+<div class="container">
+	<textarea id="raw" rows="7" spellcheck="false"></textarea>
+	<textarea id="datauri" rows="7" spellcheck="false"></textarea>
+</div>
+
+<script src="./png.js"></script>
+<script src="./jquery.js"></script>
+<script src="./jquery.color.js"></script>
+<script src="./cpickr.js"></script>
+
+<script>
+jQuery(function(){
+
+	var plteInput = document.getElementById("plte");
+	var trnsInput = document.getElementById("trns");
+	var dataInput = document.getElementById("data");
+	var hInput = document.getElementById("h");
+	var wInput = document.getElementById("w");
+
+	var rawOutput = document.getElementById("raw");
+	var dataUriOutput = document.getElementById("datauri");
+
+	var png = new PNG();
+
+	var update = function(){
+		plte = plteInput.value;
+		trns = trnsInput.value;
+		data = dataInput.value;
+		w = wInput.value;
+		h = hInput.value;
+
+		png.set({
+			width: w,
+			height: h,
+			chunks: {
+				PLTE: plte,
+				tRNS: trns
+			},
+			data: data
+		})
+	
+		var str = png.getRaw(), str2 = "";
+		for (var i = 0; i < str.length; i++){
+			str2 += str[i];
+			if ((i+1) % 2 == 0) {
+				str2 += " ";
+			}
+			if (((i+1) % 16) == 0) {
+				str2 += " "
+			}
+			if (((i+1) % 32) == 0) {
+				str2 += "\n"
+			}
+		}		
+		rawOutput.value = str2;	
+		dataUriOutput.value = png.toDataURL();
+
+		document.body.setAttribute("style", "background: url(" + png.toDataURL() + ");");	
+	}
+
+	plteInput.addEventListener("change", update, false);
+	trnsInput.addEventListener("change", update, false);
+	dataInput.addEventListener("change", update, false);
+	hInput.addEventListener("change", update, false);
+	wInput.addEventListener("change", update, false);
+
+	update();
+})
+
+
+
+</script>
