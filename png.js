@@ -174,3 +174,6 @@ function import$(a, b){
 	}
 	return a;
 }
+
+var global = (1,eval)('this');
+	global.PNG = PNG;

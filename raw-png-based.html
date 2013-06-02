@@ -106,8 +106,8 @@ jQuery(function(){
 			if (((i+1) % 32) == 0) {
 				str2 += "\n"
 			}
-		}		
-		rawOutput.value = str2;	
+		}
+		rawOutput.value = str2;
 		dataUriOutput.value = png.toDataURL();
 
 		document.body.setAttribute("style", "background: url(" + png.toDataURL() + ");");	
