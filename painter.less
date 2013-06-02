@@ -1,0 +1,395 @@
+//Painting functions
+@text: black;
+@red: red;
+@green: green;
+
+.underline(@height: 20, @color: @text, @thickness: 1){
+	@patternGen: `function(h, thick){
+		var space = "", line = "";
+		//make line
+		for (var i = 0; i < thick; i++){
+			line += "01"
+		}
+		//make space
+		for (var i = 0; i < h - thick; i++){
+			space += "00"
+		}
+		return space + line;
+	}`;
+	@pattern: `(@{patternGen})(@{height}, @{thickness})`;	
+	.png(@stream: @pattern, @w: 1, @h: unit(@height), @color: @color);
+}
+.underline{
+	.underline();
+	
+}
+.underline.thick{
+	.underline(@thickness: 2);
+}
+.underline.offset{
+	
+}
+.underline.transparent{
+	.underline(@color: fade(@text, 30%), @thickness: 1);
+}
+
+.waved(@height: 20, @color: @red, @thickness: 2, @width: 4){
+	@patternGen: `function(h, w, thick){
+		var space = "", wave = "";
+		//make wave
+		for (var y = 0; y < thick; y++){
+			for (var x = 0; x < w; x++){
+				if (x < w/2){
+					if (y < thick/2) {
+						wave += "00"
+					} else{
+						wave += "01"
+					}
+				} else {
+					if (y < thick/2) {
+						wave += "01"
+					} else{
+						wave += "00"
+					}
+				}
+			}
+		}
+		//make space
+		for (var i = 0; i < (h - thick)*w; i++){
+			space += "00"
+		}
+		return space + wave;
+	}`;
+	@pattern: `(@{patternGen})(@{height}, @{width}, @{thickness})`;
+	ptrn: @pattern;
+	.png(@stream: @pattern, @w: unit(@width), @h: unit(@height), @color: @color);
+}
+.waved{
+	.waved();
+	
+}
+.waved.alt{
+	.waved(@color: @green, @thickness: 2, @width: 6);
+}
+
+.dotted(@height: 20, @color: @text, @width: 3, @thickness: 1){
+	@patternGen: `function(h, thick, w){
+		var space = "", line = "";
+		//make line
+		for (var i = 0; i < thick; i++){
+			for(var x = 0; x < thick; x++){
+				line += "01";
+			}
+			for(var x = thick; x < w; x++){
+				line += "00";
+			}
+		}
+		//make space
+		for (var i = 0; i < (h - thick)*w; i++){
+			space += "00"
+		}
+		return space + line;
+	}`;
+	@pattern: `(@{patternGen})(@{height}, @{thickness}, @{width})`;	
+	.png(@stream: @pattern, @w: unit(@width), @h: unit(@height), @color: @color);
+}
+.dotted{
+	.dotted;
+	
+}
+.dotted.rare{
+	.dotted(@width: 6);
+}
+.dotted.thick{
+	.dotted(@width: 6, @thickness: 2);
+}
+.dashed(@height: 20, @color: @text, @width: 8, @thickness: 1, @length: 4){
+	@patternGen: `function(h, thick, w, l){
+		var space = "", line = "";
+		//make line
+		for (var i = 0; i < thick; i++){
+			for(var x = 0; x < l; x++){
+				line += "01";
+			}
+			for(var x = l; x < w; x++){
+				line += "00";
+			}
+		}
+		//make space
+		for (var i = 0; i < (h - thick)*w; i++){
+			space += "00"
+		}
+		return space + line;
+	}`;
+	@pattern: `(@{patternGen})(@{height}, @{thickness}, @{width}, @{length})`;	
+	.png(@stream: @pattern, @w: unit(@width), @h: unit(@height), @color: @color);
+}
+.dashed{
+	.dashed;
+	
+}
+.dashed.rare{
+	.dashed(@width: 6);
+}
+.dashed.thick{
+	.dashed(@width: 10, @thickness: 2, @length: 6);
+}
+.dot-dashed(@height: 20, @color: @text, @width: 10, @thickness: 1){
+	@patternGen: `function(h, thick, w){
+		var space = "", line = "";
+		//make line
+		for (var i = 0; i < thick; i++){
+			for(var x = 0; x < w; x++){
+				switch (true){
+					case (x > w*.75):
+						line += "00";
+						break;
+					case (x > w*.375):
+						line += "01";
+						break;
+					case (x > w*.125):
+						line += "00";
+						break;
+					default:
+						line += "01";
+				}
+			}
+		}
+		//make space
+		for (var i = 0; i < (h - thick)*w; i++){
+			space += "00"
+		}
+		return space + line;
+	}`;
+	@pattern: `(@{patternGen})(@{height}, @{thickness}, @{width})`;
+	.png(@stream: @pattern, @w: unit(@width), @h: unit(@height), @color: @color);
+}
+.dot-dashed{
+	.dot-dashed;
+	
+}
+.dot-dashed.thick{
+	.dot-dashed(@width: 10, @thickness: 2);
+}
+
+.pattern(@height: 20, @color: @text, @width: 8, @thickness: 1, @length: 4, @pattern: ". -"){
+	
+}
+
+
+
+//Mixin that generates PNG to background
+.png(@stream: "0001", @w: 2, @h: 2, @color: black){
+
+	@r: red(@color);
+	@g: green(@color);
+	@b: blue(@color);
+	@hexColor: rgb(red(@color),green(@color),blue(@color));
+	@PLTE: `"ffffff" + ("@{hexColor}").substr(1)`; //Make bytes palette: first-white, rest-passed color;
+
+	@a: alpha(@color);
+	@tRNS: `"ff" + (function(){ var a = Math.round(@{a} * 255).toString(16); return (a.length == 1 ? "0" + a : a) })()`;
+
+	//png.js: https://github.com/dfcreative/graphics/blob/master/src/PNG.js
+	@initPNG: `(function(){
+		Number.prototype.toUInt=function(){ return this<0?this+4294967296:this; };
+		Number.prototype.bytes32=function(){ return [(this>>>24)&0xff,(this>>>16)&0xff,(this>>>8)&0xff,this&0xff]; };
+		Number.prototype.bytes16sw=function(){ return [this&0xff,(this>>>8)&0xff]; };
+
+		Array.prototype.adler32=function(start,len){
+				switch(arguments.length){ 
+					case 0:start=0; 
+					case 1:len=this.length-start; 
+				}
+				var a=1,b=0;
+				for(var i=0;i<len;i++){
+					a = (a+this[start+i])%65521; b = (b+a)%65521;
+				}
+				return ((b << 16) | a).toUInt();
+		};
+
+		Array.prototype.crc32=function(start,len){
+			switch(arguments.length){ case 0:start=0; case 1:len=this.length-start; }
+			var table=arguments.callee.crctable;
+			if(!table){
+				table=[];
+				var c;
+				for (var n = 0; n < 256; n++) {
+					c = n;
+					for (var k = 0; k < 8; k++)
+							c = c & 1?0xedb88320 ^ (c >>> 1):c >>> 1;
+					table[n] = c.toUInt();
+				}
+				arguments.callee.crctable=table;
+			}
+			var c = 0xffffffff;
+			for (var i = 0; i < len; i++)
+				c = table[(c ^ this[start+i]) & 0xff] ^ (c>>>8);
+
+			return (c^0xffffffff).toUInt();
+		};
+
+		String.prototype.toByteStream=function(){
+			var s = []
+			if (this.length%2 == 1) this = this + "0"
+			for (var i = 0; i < this.length; i+=2){
+				s.push(parseInt(this[i] + this[i+1], 16)&0xff);
+			}
+			return s;
+		}
+
+		//Class
+		var PNG = function(opts){
+			this.options = {};
+			import$(this.options, PNG.defaults);
+			import$(this.options, opts);
+			import$(this, {
+				data: null, //bitmap data stream
+				chunks: null,
+				width: 5,
+				height: 5
+			});
+		}
+
+		import$(PNG, {
+			defaults: {		
+				bitDepth: 0x08,
+				colorType: 0x03, //3 - Indexed, 6 — trueColor with alpha
+				compressMethod: 0x00, 
+				filterMethod: 0x00, //0 - No filtering
+				interlaceMethod: 0x00
+			}
+		});
+
+		import$(PNG.prototype, {
+			raw: function(){
+				arguments.length ? this.setRaw.apply(this, arguments) : this.getRaw.apply(this, arguments);
+			},
+
+			getRaw: function(){
+				return this.getStream().map(function(c){ c = c||0; return (c<15?"0"+c.toString(16): c.toString(16)); }).join('')
+			},
+
+			getStream: function(){		
+				var self = this, o = self.options;
+
+				//IHDR
+				var s = [
+					0x89,0x50,0x4e,0x47,0x0d,0x0a,0x1a,0x0a, //BOF
+					0x00,0x00,0x00,0x0d,0x49,0x48,0x44,0x52 //Length, IHDR
+				];
+				s = s.concat((+self.width).bytes32(), (+self.height).bytes32());
+				s = s.concat(o.bitDepth, o.colorType, o.compressMethod, o.filterMethod, o.interlaceMethod);
+				s = s.concat(s.crc32(12,17).bytes32());
+
+				//PLTE
+				if (o.colorType == 0x03) {
+					var plteStream = self.chunks.PLTE.toByteStream();
+					s = s.concat(plteStream.length.bytes32());
+					var crcStart = s.length;
+					s = s.concat(0x50, 0x4c, 0x54, 0x45); //PLTE
+					s = s.concat(plteStream);
+					s = s.concat(s.crc32(crcStart, plteStream.length + 4).bytes32());
+				}
+
+				//tRNS
+				if (o.colorType == 0x03) {			
+					var trnsStream = self.chunks.tRNS.toByteStream();
+					s = s.concat(trnsStream.length.bytes32());
+					var crcStart = s.length;
+					s = s.concat(0x74, 0x52, 0x4e, 0x53); //tRNS
+					s = s.concat(trnsStream);
+					s = s.concat(s.crc32(crcStart, trnsStream.length + 4).bytes32());
+				} else {
+					//IDAT stream 
+				}
+
+				//IDAT
+				var dataStream = self.data.toByteStream();
+				var w = self.width, h = self.height,
+					l = (o.colorType == 0x03 ? 1 : 4); //How much bytes per pixel //TODO: check other than 8bit color
+
+				var len=h*(w*l+1); //+1 is filter type (00)
+				for(var y=0;y<h;y++)
+					dataStream.splice(y*(w*l+1),0,0x00); //insert filter type (0x00) before the each scanline (row)
+
+				var blocks=Math.ceil(len/32768); //32768 - max block length?
+
+				s = s.concat( (len+ 5*blocks +6).bytes32() ); //length = dataLen + (btype+ lenx2 + nlenx2) + zlib_header + adler
+				s = s.concat(0x49, 0x44, 0x41, 0x54); //IDAT
+
+				var crcStart=s.length;
+				var crcLen=(len+5*blocks+6+4); //datalen + header
+
+				//zlib
+				//http://www.w3.org/TR/2003/REC-PNG-20031110/#10CompressionCM0
+				//http://tools.ietf.org/html/rfc1950#page-4	
+				s = s.concat(0x78, 0x01) //7 - 2^7, 8 - deflate method, 01 - fastest compression, no dict, checkflag
+				//s = s.concat(0x01, (0x02).bytes16sw(), (~0x02).bytes16sw(), dataStream) //01 - end-block header, len, nlen, rawdata
+						
+				for(var i=0;i<blocks;i++){
+					var blockLen=Math.min(32768,len-(i*32768)); //last block length detection
+					s.push(i==(blocks-1)?0x01:0x00); //end block or not
+					s = s.concat(blockLen.bytes16sw() ); //blocklen
+					s = s.concat((~blockLen).bytes16sw() ); //blocklencomplement
+					var id=dataStream.slice(i*32768,i*32768+blockLen); //splice part of image data
+					s = s.concat( id ); //write it raw
+				}
+
+				s = s.concat( dataStream.adler32().bytes32() ); //make adler
+				s = s.concat( s.crc32(crcStart, crcLen).bytes32() );
+
+
+				//IEND
+				s = s.concat(0x00,0x00,0x00,0x00,0x49,0x45,0x4e,0x44);//Length, IEND
+				s = s.concat(s.crc32(s.length-4, 4).bytes32());
+				return s;
+			},
+
+			set: function(settings){
+				import$(this, settings);
+			},
+
+			toDataURL: function(){
+				var self = this, o = self.options;
+				var dataURI = "data:image/png;base64,"+ btoa( self.getStream().map(function(c){ return String.fromCharCode(c); }).join('') );
+				return dataURI;
+			}
+		});
+
+		//js crutches
+		function import$(a, b){
+			for (var key in b){
+				a[key] = b[key];
+			}
+			return a;
+		}
+		
+		var global = (1,eval)('this');
+		global.PNG = PNG;
+
+		return true;
+	})()`;
+
+	@background: `(function(){
+		var png = new PNG();
+		
+		png.set({
+			width: @{w},
+			height: @{h},
+			chunks:{
+				PLTE: @{PLTE},
+				tRNS: @{tRNS}
+			},
+			data: @{stream}
+		})
+
+		return "url(" + png.toDataURL() + ")";
+	})()`;
+
+	background-image: ~"@{background}";
+}
+
+.png{
+	.png();
+}
