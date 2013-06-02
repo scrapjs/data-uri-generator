@@ -39,7 +39,7 @@ Array.prototype.crc32=function(start,len){
 
 String.prototype.toByteStream=function(){
 	var s = []
-	if (this.length%2 == 1) this = this + "0"
+	if (this.length % 2 == 1) {this[this.length] = "0"};
 	for (var i = 0; i < this.length; i+=2){
 		s.push(parseInt(this[i] + this[i+1], 16)&0xff);
 	}

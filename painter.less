@@ -230,13 +230,13 @@
 		};
 
 		String.prototype.toByteStream=function(){
-			var s = []
-			if (this.length%2 == 1) this = this + "0"
+			var s = [];
+			if (this.length % 2 == 1) {this[this.length] = "0"};
 			for (var i = 0; i < this.length; i+=2){
 				s.push(parseInt(this[i] + this[i+1], 16)&0xff);
 			}
 			return s;
-		}
+		};
 
 		//Class
 		var PNG = function(opts){
@@ -249,7 +249,7 @@
 				width: 5,
 				height: 5
 			});
-		}
+		};
 
 		import$(PNG, {
 			defaults: {		
@@ -363,7 +363,7 @@
 				a[key] = b[key];
 			}
 			return a;
-		}
+		};
 		
 		var global = (1,eval)('this');
 		global.PNG = PNG;
