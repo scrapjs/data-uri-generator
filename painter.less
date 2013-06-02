@@ -61,7 +61,6 @@
 		return space + wave;
 	}`;
 	@pattern: `(@{patternGen})(@{height}, @{width}, @{thickness})`;
-	ptrn: @pattern;
 	.png(@stream: @pattern, @w: unit(@width), @h: unit(@height), @color: @color);
 }
 .waved{
@@ -367,6 +366,16 @@
 		
 		var global = (1,eval)('this');
 		global.PNG = PNG;
+
+		var btoaDef = global.btoa;
+
+		global.btoa = function(string){
+			if (btoaDef) {
+				return btoaDef(string)
+			} else {
+				return new Buffer(string, 'binary').toString('base64');
+			}
+		}
 
 		return true;
 	})()`;

@@ -177,3 +177,13 @@ function import$(a, b){
 
 var global = (1,eval)('this');
 	global.PNG = PNG;
+
+var btoaDef = global.btoa;
+
+global.btoa = function(string){
+	if (btoaDef) {
+		return btoaDef(string)
+	} else {
+		return new Buffer(string, 'binary').toString('base64');
+	}
+}
