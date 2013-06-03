@@ -17,6 +17,7 @@
 		return space + line;
 	}`;
 	@pattern: `(@{patternGen})(@{height}, @{thickness})`;	
+	background-position: 0 bottom;
 	.png(@stream: @pattern, @w: 1, @h: unit(@height), @color: @color);
 }
 .underline{
@@ -62,6 +63,7 @@
 	}`;
 	@pattern: `(@{patternGen})(@{height}, @{width}, @{thickness})`;
 	.png(@stream: @pattern, @w: unit(@width), @h: unit(@height), @color: @color);
+	background-position: 0 bottom;
 }
 .waved{
 	.waved();
@@ -91,6 +93,7 @@
 	}`;
 	@pattern: `(@{patternGen})(@{height}, @{thickness}, @{width})`;	
 	.png(@stream: @pattern, @w: unit(@width), @h: unit(@height), @color: @color);
+	background-position: 0 bottom;
 }
 .dotted{
 	.dotted;
@@ -122,6 +125,7 @@
 	}`;
 	@pattern: `(@{patternGen})(@{height}, @{thickness}, @{width}, @{length})`;	
 	.png(@stream: @pattern, @w: unit(@width), @h: unit(@height), @color: @color);
+	background-position: 0 bottom;
 }
 .dashed{
 	.dashed;
@@ -162,6 +166,7 @@
 	}`;
 	@pattern: `(@{patternGen})(@{height}, @{thickness}, @{width})`;
 	.png(@stream: @pattern, @w: unit(@width), @h: unit(@height), @color: @color);
+	background-position: 0 bottom;
 }
 .dot-dashed{
 	.dot-dashed;
